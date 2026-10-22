@@ -1,0 +1,8 @@
+{
+  "updatedAt": "2026-10-22",
+  "events": [
+    {"id":"sample-1","name":"예시 대회 A (중등부 격파)","division":"중등부","date":"2026-11-14","venue":"예시 체육관","deadline":"2026-10-28","url":"https://www.koreataekwondo.co.kr/","source":"예시 데이터","checkedAt":"2026-10-22","sample":true},
+    {"id":"sample-2","name":"예시 대회 B (고등부 격파)","division":"고등부","date":"2026-11-21","venue":"예시 체육관","deadline":"2026-11-09","url":"https://www.koreataekwondo.co.kr/","source":"예시 데이터","checkedAt":"2026-10-22","sample":true},
+    {"id":"sample-3","name":"예시 대회 C (대학부 격파)","division":"대학부","date":"2026-12-05","venue":"예시 체육관","deadline":null,"url":"https://www.koreataekwondo.co.kr/","source":"예시 데이터","checkedAt":"2026-10-22","sample":true}
+  ]
+}

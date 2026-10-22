@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>태스크포스 · 격파대회 일정</title>
+<style>
+:root{--ink:#111827;--sub:#6b7280;--line:#e5e7eb;--bg:#f7f8fa;--card:#fff;--blue:#1d4ed8;--blue-bg:#dbeafe;--red:#dc2626;--red-bg:#fee2e2}
+@media (prefers-color-scheme:dark){:root{--ink:#f3f4f6;--sub:#9ca3af;--line:#374151;--bg:#111827;--card:#1f2937;--blue:#93c5fd;--blue-bg:#1e3a8a;--red:#fca5a5;--red-bg:#7f1d1d}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+header,main{max-width:860px;margin:0 auto;padding:16px}
+h1{margin:0;font-size:26px}h2{font-size:17px;margin:20px 0 8px}
+#meta{margin:2px 0 12px;color:var(--sub);font-size:14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--card)}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg button{border:0;background:none;padding:8px 14px}
+.seg button.on{background:var(--ink);color:var(--bg);font-weight:700}
+button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#sample{background:var(--red-bg);color:var(--red);padding:8px 12px;border-radius:8px;font-size:14px;margin-bottom:12px}
+.chip{display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:700;background:var(--red-bg);color:var(--red)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.nav b{font-size:20px}.nav button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.wd{text-align:center;font-size:13px;color:var(--sub);padding:4px 0}
+.day{min-height:78px;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:4px;text-align:left;overflow:hidden}
+.day.blank{border:0;background:none;cursor:default}
+.day.today b{background:var(--ink);color:var(--bg);border-radius:999px;padding:0 6px}
+.day.sel{outline:2px solid var(--blue)}
+.day b{font-size:13px}
+.p{display:block;margin-top:2px;padding:1px 4px;border-radius:4px;font-size:11px;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p.e{background:var(--blue-bg);color:var(--blue)}.p.d{background:var(--red-bg);color:var(--red)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.card.past{opacity:.55}
+.card h3{margin:0 0 4px;font-size:17px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid var(--line);margin-right:4px;color:var(--sub)}
+.tag.new{background:var(--blue-bg);color:var(--blue);border:0}
+.dl{font-weight:700}.dl.red{color:var(--red)}.dl.gray{color:var(--sub)}
+.go{display:inline-block;margin-top:8px;padding:8px 14px;border-radius:8px;background:var(--blue);color:var(--bg);text-decoration:none;font-weight:700}
+.note{color:var(--sub);font-size:12px;margin:6px 0 0}
+.empty{color:var(--sub);padding:12px 0}
+@media (max-width:600px){.day{min-height:56px}.p{height:6px;width:6px;padding:0;display:inline-block;margin:3px 2px 0 0;border-radius:50%}.p span{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>태스크포스</h1>
+  <p id="meta"></p>
+  <div class="bar"><div class="seg" id="divs"></div><div class="seg" id="views"></div></div>
+</header>
+<main>
+  <div id="sample" hidden>지금 보이는 일정은 <b>예시 데이터</b>입니다. 자동 업데이트가 한 번 실행되면 실제 대회로 바뀝니다.</div>
+  <section id="urgent"></section>
+  <section id="cal"></section>
+  <section id="list"></section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const DIVS = ["전체","중등부","고등부","대학부"], WD = "일월화수목금토";
+const pad = n => String(n).padStart(2,"0");
+const parse = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y,m-1,d); };
+const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const dday = s => Math.round((parse(s) - today) / 864e5);
+const fd = s => { const d = parse(s); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}(${WD[d.getDay()]})`; };
+const md = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+const esc = t => String(t ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const read = k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const write = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let data = read("tf-data") || { updatedAt: null, events: [] };
+let st = Object.assign({ div: "전체", view: "cal" }, read("tf-settings") || {});
+let cur = new Date(today.getFullYear(), today.getMonth(), 1), sel = null;
+
+function card(e) {
+  let dl = "마감일은 공고에서 확인하세요", cls = "";
+  if (e.deadline) {
+    const n = dday(e.deadline);
+    dl = n < 0 ? `접수 종료 (${md(e.deadline)})` : `접수마감 ${fd(e.deadline)} · ${n === 0 ? "오늘 마감" : "D-" + n}`;
+    cls = n < 0 ? "gray" : n <= 7 ? "red" : "";
+  }
+  const isNew = e.firstSeen && -dday(e.firstSeen) <= 7, chg = e.changedAt && -dday(e.changedAt) <= 7;
+  return `<article class="card ${dday(e.date) < 0 ? "past" : ""}">
+    <h3>${isNew ? '<span class="tag new">NEW</span>' : ""}${chg ? '<span class="tag new">변경됨</span>' : ""}${esc(e.name)}</h3>
+    <span class="tag">${esc(e.division)}</span>${fd(e.date)}${e.venue ? " · " + esc(e.venue) : ""}
+    <div class="dl ${cls}">${dl}</div>
+    <a class="go" href="${esc(e.url)}" target="_blank" rel="noopener">공식 사이트 바로가기</a>
+    <p class="note">출처 ${esc(e.source)} · 확인일 ${esc(e.checkedAt)} · AI가 정리한 일정이므로 공식 공고에서 최종 확인하세요.</p>
+  </article>`;
+}
+
+function render() {
+  const all = data.events.filter(e => st.div === "전체" || e.division === st.div).sort((a,b) => a.date.localeCompare(b.date));
+  $("#meta").textContent = data.updatedAt ? `마지막 업데이트 ${data.updatedAt}` : "일정을 불러오는 중…";
+  $("#sample").hidden = !data.events.some(e => e.sample);
+  $("#divs").innerHTML = DIVS.map(d => `<button data-d="${d}" class="${d === st.div ? "on" : ""}">${d}</button>`).join("");
+  $("#views").innerHTML = [["cal","달력"],["list","목록"]].map(([v,t]) => `<button data-v="${v}" class="${v === st.view ? "on" : ""}">${t}</button>`).join("");
+
+  const urgent = all.filter(e => e.deadline && dday(e.deadline) >= 0 && dday(e.deadline) <= 7).sort((a,b) => a.deadline.localeCompare(b.deadline));
+  $("#urgent").innerHTML = urgent.length ? `<h2>접수마감 임박 (7일 이내)</h2>` +
+    urgent.map(e => `<span class="chip">${esc(e.name)} · ${dday(e.deadline) === 0 ? "오늘" : "D-" + dday(e.deadline)}</span>`).join("") : "";
+
+  if (st.view === "list") {
+    $("#cal").innerHTML = "";
+    $("#list").innerHTML = `<h2>전체 일정</h2>` + (all.length ? all.map(card).join("") : '<p class="empty">등록된 대회가 없습니다.</p>');
+    return;
+  }
+  const y = cur.getFullYear(), m = cur.getMonth(), first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+  const map = {}, add = (k, v) => (map[k] = map[k] || []).push(v);
+  all.forEach(e => { add(e.date, { t: "e", e }); if (e.deadline) add(e.deadline, { t: "d", e }); });
+  let cells = "";
+  for (let i = 0; i < first; i++) cells += '<span class="day blank"></span>';
+  for (let d = 1; d <= days; d++) {
+    const k = `${y}-${pad(m+1)}-${pad(d)}`, isToday = d === today.getDate() && m === today.getMonth() && y === today.getFullYear();
+    cells += `<button class="day ${isToday ? "today" : ""} ${sel === k ? "sel" : ""}" data-k="${k}"><b>${d}</b>` +
+      (map[k] || []).map(x => `<i class="p ${x.t}"><span>${x.t === "d" ? "마감" : "대회"} ${esc(x.e.name)}</span></i>`).join("") + "</button>";
+  }
+  $("#cal").innerHTML = `<div class="nav"><button data-n="-1" aria-label="이전 달">◀</button><b>${y}년 ${m+1}월</b><button data-n="0">오늘</button><button data-n="1" aria-label="다음 달">▶</button></div>
+    <div class="grid">${[...WD].map(w => `<span class="wd">${w}</span>`).join("")}${cells}</div>
+    <p class="note"><span class="chip" style="background:var(--blue-bg);color:var(--blue)">대회일</span><span class="chip">접수마감</span></p>`;
+  const month = `${y}-${pad(m+1)}`;
+  const shown = sel ? all.filter(e => e.date === sel || e.deadline === sel) : all.filter(e => e.date.startsWith(month) || (e.deadline || "").startsWith(month));
+  $("#list").innerHTML = `<h2>${sel ? fd(sel) : (m+1) + "월"} 일정</h2>` + (shown.length ? shown.map(card).join("") : '<p class="empty">이 기간에 등록된 일정이 없습니다.</p>');
+}
+
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+  if (b.dataset.d) st.div = b.dataset.d;
+  else if (b.dataset.v) st.view = b.dataset.v;
+  else if (b.dataset.k) sel = sel === b.dataset.k ? null : b.dataset.k;
+  else if (b.dataset.n !== undefined) { cur = b.dataset.n === "0" ? new Date(today.getFullYear(), today.getMonth(), 1) : new Date(cur.getFullYear(), cur.getMonth() + Number(b.dataset.n), 1); sel = null; }
+  else return;
+  write("tf-settings", { div: st.div, view: st.view });
+  render();
+});
+
+render();
+fetch("data/events.json?t=" + Date.now()).then(r => r.json()).then(d => { data = d; write("tf-data", d); render(); }).catch(() => {});
+</script>
+</body>
+</html>
